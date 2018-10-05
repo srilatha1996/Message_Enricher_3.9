@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:sqs="http://www.mulesoft.org/schema/mule/sqs" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking"
+xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/sqs http://www.mulesoft.org/schema/mule/sqs/current/mule-sqs.xsd">
+    <http:listener-config name="HTTP_Listener_Configuration" host="localhost" port="8081" doc:name="HTTP Listener Configuration"/>
+    <file:connector name="File" autoDelete="true" streaming="true" validateConnections="true" doc:name="File"/>
+<flow name="mainFlow">
+<http:listener config-ref="HTTP_Listener_Configuration"
+path="/for" doc:name="HTTP" />
+<dw:transform-message doc:name="Transform Message">
+<dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+[{
+name:"abc",
+age:12,
+zip:"",
+street: "",
+City:""
+},
+{
+name:"def",
+age:13,
+zip:"",
+street: "",
+City:""
+},
+{
+name:"ghi",
+age:14,
+zip:"",
+street: "",
+City:""
+}
+]
+]]></dw:set-payload>
+</dw:transform-message>
+        <foreach doc:name="For Each">
+            <enricher doc:name="Message Enricher">
+                <flow-ref name="subFlow" doc:name="Flow Reference"/>
+                <enrich source="#[flowVars.zipCode]" target="#[payload.zip]"/>
+                <enrich source="#[flowVars.street]" target="#[payload.street]"/>
+                <enrich source="#[flowVars.City]" target="#[payload.City]"/>
+            </enricher>
+        </foreach>
+
+
+<logger level="INFO" doc:name="Logger"
+message="#[message.payloadAs(java.lang.String)]" />
+        <object-to-string-transformer doc:name="Object to String"/>
+        <file:outbound-endpoint responseTimeout="10000" doc:name="File" connector-ref="File" outputPattern="#[server.dateTime.format(&quot;dd-MMM-yy-HH-mm-ss&quot;)].txt" path="src/main/resources/OUT"/>
+
+</flow>
+
+<sub-flow name="subFlow">
+<set-variable variableName="zipCode" value="#['010101']"
+doc:name="Zip" />
+<set-variable variableName="street" value="#['Frei Caneca']"
+doc:name="Street" />
+        <set-variable variableName="City" value="#['NewYork']" doc:name="City"/>
+</sub-flow>
+</mule>

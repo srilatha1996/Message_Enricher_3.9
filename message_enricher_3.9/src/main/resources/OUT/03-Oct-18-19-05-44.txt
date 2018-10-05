@@ -1,0 +1,3 @@
+[{name=abc, age=12, zip=010101, street=Frei Caneca, City=NewYork}, 
+{name=def, age=13, zip=010101, street=Frei Caneca, City=NewYork},
+ {name=ghi, age=14, zip=010101, street=Frei Caneca, City=NewYork}]
